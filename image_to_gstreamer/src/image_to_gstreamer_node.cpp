@@ -14,6 +14,9 @@ public:
 
     input_topic_ = this->declare_parameter<std::string>("input_topic", "/cam/image_color");
 
+    host_ = this->declare_parameter<std::string>("host", "127.0.0.1");
+    port_ = this->declare_parameter<int>("port", 5000);
+
     sub_ = create_subscription<sensor_msgs::msg::Image>(
       input_topic_, rclcpp::SensorDataQoS(),
       std::bind(&ImageToGStreamer::imageCb, this, std::placeholders::_1));
@@ -71,8 +74,8 @@ private:
     }
 
     g_object_set(sink,
-      "host", "127.0.0.1",
-      "port", 5000,
+      "host", host_.c_str(),
+      "port", port_,
       "sync", FALSE,
       NULL);
 
@@ -140,6 +143,8 @@ private:
   // ----------------------------- Params & ROS --------------------------------
   // Topics
   std::string input_topic_{"/cam/image_color"};
+  std::string host_{"127.0.0.1"};
+  int port_{5000};
 };
 
 int main(int argc, char **argv)
