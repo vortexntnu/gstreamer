@@ -1,7 +1,7 @@
 # Introduction
 
 ```
-TODO: Write a simple description / introduction to the repository
+Repository to move image to gstreamer
 ```
 
 # Setup
@@ -39,3 +39,4 @@ pre-commit autoupdate
 - This project uses GitHub Actions for CI.
 - Workflows are located in [`.github/workflows`](.github/workflows/).
 - For more information, see [vortex-ci](https://github.com/vortexntnu/vortex-ci).
+
