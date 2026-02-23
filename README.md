@@ -5,12 +5,15 @@ Repository to move image to gstreamer
 ```
 
 # Setup
-
 ```
+```
+
 ## launch variables
+```
 ros2 launch image_to_gstreamer image_to_gstreamer.launch.py host:=127.0.0.1 port:=5001
 
 ## terminal launch for gstreamer
+```
 gst-launch-1.0 udpsrc port=5001   caps="application/x-rtp,media=video,encoding-name=H265,payload=96"
 ! rtph265depay   ! avdec_h265   ! videoconvert ! fpsdisplaysink
 ```
@@ -44,6 +47,7 @@ pre-commit autoupdate
 - This project uses GitHub Actions for CI.
 - Workflows are located in [`.github/workflows`](.github/workflows/).
 - For more information, see [vortex-ci](https://github.com/vortexntnu/vortex-ci).
+
 
 
 
