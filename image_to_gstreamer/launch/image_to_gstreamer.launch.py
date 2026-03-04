@@ -25,7 +25,7 @@ def generate_launch_description():
             executable='image_to_gstreamer_node',
             name='image_to_gstreamer_node',
             parameters=[
-                {'input_topic': '/cam/image_color'},
+                {'input_topic': '/zed_node/left/image_rect_color'},
                 {'host': LaunchConfiguration('host')},
                 {'port': LaunchConfiguration('port')},
             ],
