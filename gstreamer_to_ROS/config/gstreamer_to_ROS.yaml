@@ -1,0 +1,5 @@
+gstreamer_to_ROS_node:
+  ros__parameters:
+    host: "0.0.0.0"          # Listen on all interfaces
+    port: 5001               # Must match sender
+    output_topic: "/camera/image_raw"

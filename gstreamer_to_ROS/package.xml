@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>gstreamer_to_ROS</name>
+  <version>0.1.0</version>
+  <description>ROS 2 node that fits a line over a white segmented mask using IRLS (Huber/Tukey) and OpenCV.</description>
+
+  <maintainer email="you@example.com">You</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+
+  <build_depend>pkg-config</build_depend>
+  <exec_depend>pkg-config</exec_depend>
+
+  <build_depend>gstreamer1.0</build_depend>
+  <exec_depend>gstreamer1.0</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
