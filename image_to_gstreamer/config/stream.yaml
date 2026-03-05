@@ -1,0 +1,13 @@
+image_to_gstreamer_node:
+  ros__parameters:
+    input_topic: "/zed_node/left/image_rect_color"
+    host: "127.0.0.1"
+    port: 5000
+
+    framerate: 15
+    bitrate: 500000
+    preset_level: 1
+    iframe_interval: 15
+    control_rate: 1
+    pt: 96
+    config_interval: 1

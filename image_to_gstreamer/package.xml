@@ -12,6 +12,12 @@
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
 
+  <build_depend>pkg-config</build_depend>
+  <exec_depend>pkg-config</exec_depend>
+
+  <build_depend>gstreamer1.0</build_depend>
+  <exec_depend>gstreamer1.0</exec_depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>

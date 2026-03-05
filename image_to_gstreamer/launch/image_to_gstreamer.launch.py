@@ -16,18 +16,21 @@ def generate_launch_description():
         default_value='5000',
         description='Destination UDP port'
     )
+    config_arg = DeclareLaunchArgument(
+        'config_file',
+        default_value='config/stream.yaml',
+        description='Path to config file'
+    )
 
     return LaunchDescription([
         host_arg,
         port_arg,
         Node(
-            package='image_to_gstreamer',
-            executable='image_to_gstreamer_node',
-            name='image_to_gstreamer_node',
-            parameters=[
-                {'input_topic': '/zed_node/left/image_rect_color'},
-                {'host': LaunchConfiguration('host')},
-                {'port': LaunchConfiguration('port')},
-            ],
+        package='image_to_gstreamer',
+        executable='image_to_gstreamer_node',
+        name='image_to_gstreamer_node',
+        parameters=[
+            LaunchConfiguration('config_file')
+        ],
         )
     ])

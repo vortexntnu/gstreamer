@@ -3,11 +3,14 @@
 
 #include <gst/gst.h>
 #include <gst/app/gstappsrc.h>
+#include "image_to_gstreamer/image_to_gstreamer.hpp"
 
-class ImageToGStreamer : public rclcpp::Node
-{
-public:
-    ImageToGStreamer() : Node("image_to_gstreamer_node")
+
+ImageToGStreamer::ImageToGStreamer()
+    : Node("image_to_gstreamer_node"),
+      pipeline_(nullptr),
+      appsrc_(nullptr),
+      pipeline_started_(false)
     {
         gst_init(nullptr, nullptr);
 
@@ -26,16 +29,25 @@ public:
                 RCLCPP_INFO(this->get_logger(), "Waiting for images on topic: '%s'", input_topic_.c_str());
             });
 
+        bitrate_         = this->declare_parameter<int>("bitrate", 500000);
+        preset_level_    = this->declare_parameter<int>("preset_level", 1);
+        iframe_interval_ = this->declare_parameter<int>("iframe_interval", 15);
+        control_rate_    = this->declare_parameter<int>("control_rate", 1);
+        pt_              = this->declare_parameter<int>("pt", 96);
+        config_interval_ = this->declare_parameter<int>("config_interval", 1);
+        framerate_       = this->declare_parameter<int>("framerate", 15);
+
         create_pipeline();
     }
 
-    ~ImageToGStreamer()
+    ImageToGStreamer::~ImageToGStreamer()
     {
+      if (pipeline_) {
         gst_element_set_state(pipeline_, GST_STATE_NULL);
         gst_object_unref(pipeline_);
+      }
     }
 
-private:
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;
     GstElement *pipeline_;
     GstElement *appsrc_;
@@ -45,7 +57,7 @@ private:
     std::string host_;
     int port_;
 
-    void create_pipeline()
+    void ImageToGStreamer::create_pipeline()
     {
         pipeline_ = gst_pipeline_new("ros2-h265-pipeline");
 
@@ -65,16 +77,16 @@ private:
 
         // Encoder properties for low-latency
         g_object_set(encoder,
-            "bitrate", 500000,        // kbps
-            "preset-level", 1,      // low-latency
-            "iframeinterval", 15,   // keyframe interval
-            "control-rate", 1,      // CBR
-            NULL);
+          "bitrate", bitrate_,
+          "preset-level", preset_level_,
+          "iframeinterval", iframe_interval_,
+          "control-rate", control_rate_,
+          NULL);
 
         g_object_set(pay,
-            "config-interval", 1,   // send SPS/PPS every 1 second
-            "pt", 96,               // must match receiver
-            NULL);
+          "config-interval", config_interval_,
+          "pt", pt_,
+          NULL);
 
         g_object_set(sink,
             "host", host_.c_str(),
@@ -92,7 +104,7 @@ private:
         }
     }
 
-    void imageCb(const sensor_msgs::msg::Image::SharedPtr msg)
+    void ImageToGStreamer::imageCb(const sensor_msgs::msg::Image::SharedPtr msg)
   {
       static size_t frame_count = 0;
       frame_count++;
@@ -106,7 +118,7 @@ private:
               "format", G_TYPE_STRING, "BGRA",
               "width", G_TYPE_INT, msg->width,
               "height", G_TYPE_INT, msg->height,
-              "framerate", GST_TYPE_FRACTION, 15, 1,
+              "framerate", GST_TYPE_FRACTION, framerate_, 1,
               NULL);
 
           g_object_set(appsrc_,
@@ -135,7 +147,6 @@ private:
       else
           RCLCPP_DEBUG(get_logger(), "Pushed frame #%zu into GStreamer", frame_count);
   }
-};
 
 int main(int argc, char **argv)
 {
