@@ -10,7 +10,7 @@ GStreamerToROS::GStreamerToROS()
                                                          "/camera/image_raw");
 
     pub_ = this->create_publisher<sensor_msgs::msg::Image>(
-        output_topic_, rclcpp::SensorDataQoS());
+        output_topic_, vortex::utils::qos_profiles::sensor_data_profile(1));
 
     create_pipeline();
 }

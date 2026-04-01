@@ -2,15 +2,18 @@
 <package format="3">
   <name>image_to_gstreamer</name>
   <version>0.1.0</version>
-  <description>ROS 2 node that fits a line over a white segmented mask using IRLS (Huber/Tukey) and OpenCV.</description>
+  <description>takes image form ROS node and sends it via gstreamer</description>
 
-  <maintainer email="you@example.com">You</maintainer>
+  <maintainer email=" gardeg@github.com">You</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
+  <depend>vortex_utils_ros</depend>
+  
+  
 
   <build_depend>pkg-config</build_depend>
   <exec_depend>pkg-config</exec_depend>

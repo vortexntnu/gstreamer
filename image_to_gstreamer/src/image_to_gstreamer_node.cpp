@@ -4,6 +4,7 @@
 #include <gst/app/gstappsrc.h>
 #include <gst/gst.h>
 #include "image_to_gstreamer/image_to_gstreamer.hpp"
+#include <vortex/utils/ros/qos_profiles.hpp>
 
 ImageToGStreamer::ImageToGStreamer()
     : Node("image_to_gstreamer_node"),
@@ -19,7 +20,7 @@ ImageToGStreamer::ImageToGStreamer()
     port_ = this->declare_parameter<int>("port", 5001);  // must match receiver
 
     sub_ = create_subscription<sensor_msgs::msg::Image>(
-        input_topic_, rclcpp::SensorDataQoS(),
+        input_topic_, vortex::utils::qos_profiles::sensor_data_profile(1),
         std::bind(&ImageToGStreamer::imageCb, this, std::placeholders::_1));
 
     timer_ = create_wall_timer(std::chrono::seconds(5), [this]() {
@@ -63,12 +64,15 @@ void ImageToGStreamer::create_pipeline() {
     }
 
     // Encoder properties for low-latency
+    //configurs h265 encoder
     g_object_set(encoder, "bitrate", bitrate_, "preset-level", preset_level_,
                  "iframeinterval", iframe_interval_, "control-rate",
                  control_rate_, NULL);
-
+    
+    //configures packaging
     g_object_set(pay, "config-interval", config_interval_, "pt", pt_, NULL);
-
+    
+    //configures where to send it
     g_object_set(sink, "host", host_.c_str(), "port", port_, "sync", FALSE,
                  NULL);
 

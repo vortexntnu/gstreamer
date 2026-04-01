@@ -16,7 +16,7 @@ def generate_launch_description():
         [
             Node(
                 package='gstreamer_to_ROS',
-                executable='gstreamer_to_ROS',
+                executable='gstreamer_to_ROS_node',
                 name='gstreamer_to_ROS_node',
                 parameters=[config],
                 output='screen',

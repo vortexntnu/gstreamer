@@ -4,6 +4,8 @@ project(image_to_gstreamer)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(vortex_utils_ros REQUIRED)
+find_package(vortex_msgs REQUIRED)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GST REQUIRED
@@ -27,6 +29,7 @@ target_link_libraries(image_to_gstreamer_node
 ament_target_dependencies(image_to_gstreamer_node
   rclcpp
   sensor_msgs
+  vortex_utils_ros
 )
 
 install(TARGETS
