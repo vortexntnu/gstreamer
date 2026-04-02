@@ -28,13 +28,14 @@ ImageToGStreamer::ImageToGStreamer()
                     input_topic_.c_str());
     });
 
-    bitrate_ = this->declare_parameter<int>("bitrate", 500000);
-    preset_level_ = this->declare_parameter<int>("preset_level", 1);
-    iframe_interval_ = this->declare_parameter<int>("iframe_interval", 15);
-    control_rate_ = this->declare_parameter<int>("control_rate", 1);
-    pt_ = this->declare_parameter<int>("pt", 96);
-    config_interval_ = this->declare_parameter<int>("config_interval", 1);
-    framerate_ = this->declare_parameter<int>("framerate", 15);
+    bitrate_ = this->declare_parameter<int>("bitrate", 500000);   // bitrate bit
+    preset_level_ = this->declare_parameter<int>("preset_level", 1);    // 1-4 1 = low latancy low quality 4 = high latency high qulity
+    iframe_interval_ = this->declare_parameter<int>("iframe_interval", 15);  // how many control framse is sent (full frames)
+    control_rate_ = this->declare_parameter<int>("control_rate", 1);  // 0 = fixed bitrate , 1 = variabel with target, 2 = constant QP, 3 = variabel with celing
+    pt_ = this->declare_parameter<int>("pt", 96);  // RTP Payload Type number defaut value
+    config_interval_ = this->declare_parameter<int>("config_interval", 1); // keep at 1
+    framerate_ = this->declare_parameter<int>("framerate", 15); // you know what framrate is
+    format = this->declare_parameter<std::string>("format", "RGB8");
 
     create_pipeline();
 }
@@ -96,7 +97,7 @@ void ImageToGStreamer::imageCb(const sensor_msgs::msg::Image::SharedPtr msg) {
 
     if (!pipeline_started_) {
         GstCaps* caps = gst_caps_new_simple(
-            "video/x-raw", "format", G_TYPE_STRING, "BGRA", "width", G_TYPE_INT,
+            "video/x-raw", "format", G_TYPE_STRING, format, "width", G_TYPE_INT,
             msg->width, "height", G_TYPE_INT, msg->height, "framerate",
             GST_TYPE_FRACTION, framerate_, 1, NULL);
 

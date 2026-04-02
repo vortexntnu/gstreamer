@@ -27,6 +27,7 @@ class ImageToGStreamer : public rclcpp::Node {
     int pt_;
     int config_interval_;
     int framerate_;
+    std::string format;
 
     GstElement* pipeline_;
     GstElement* appsrc_;

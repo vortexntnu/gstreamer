@@ -4,7 +4,7 @@
   <version>0.1.0</version>
   <description>takes image form ROS node and sends it via gstreamer</description>
 
-  <maintainer email=" gardeg@github.com">You</maintainer>
+  <maintainer email="gardeg@github.com">Gard</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

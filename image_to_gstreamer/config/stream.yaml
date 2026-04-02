@@ -11,3 +11,4 @@ image_to_gstreamer_node:
     control_rate: 1
     pt: 96
     config_interval: 1
+    format: "RGB8"
