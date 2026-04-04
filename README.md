@@ -14,8 +14,7 @@ ros2 launch image_to_gstreamer image_to_gstreamer.launch.py host:=127.0.0.1 port
 ```
 ## terminal launch for gstreamer
 ```
-gst-launch-1.0 udpsrc port=5001   caps="application/x-rtp,media=video,encoding-name=H265,payload=96"
-! rtph265depay   ! avdec_h265   ! videoconvert ! fpsdisplaysink
+gst-launch-1.0 udpsrc port=5001   caps="application/x-rtp,media=video,encoding-name=H265 payload=96 ! rtph265depay   ! avdec_h265   ! videoconvert ! fpsdisplaysink
 ```
 
 ## Using pre-commit
