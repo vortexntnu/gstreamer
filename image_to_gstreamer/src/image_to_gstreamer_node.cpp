@@ -14,10 +14,9 @@ ImageToGStreamer::ImageToGStreamer()
     gst_init(nullptr, nullptr);
 
     // Correct member initialization
-    input_topic_ = this->declare_parameter<std::string>(
-        "input_topic", "/zed_node/left/image_rect_color");
-    host_ = this->declare_parameter<std::string>("host", "10.42.0.113");
-    port_ = this->declare_parameter<int>("port", 5001);  // must match receiver
+    input_topic_ = this->declare_parameter<std::string>("input_topic", "");
+    host_ = this->declare_parameter<std::string>("host", "");
+    port_ = this->declare_parameter<int>("port", 5000);  // must match receiver
 
     sub_ = create_subscription<sensor_msgs::msg::Image>(
         input_topic_, vortex::utils::qos_profiles::sensor_data_profile(1),
@@ -90,14 +89,10 @@ void ImageToGStreamer::create_pipeline() {
 void ImageToGStreamer::imageCb(const sensor_msgs::msg::Image::SharedPtr msg) {
     static size_t frame_count = 0;
     frame_count++;
-    RCLCPP_INFO(
-        get_logger(),
-        "Received image frame #%zu, size: %zu bytes, width=%d, height=%d",
-        frame_count, msg->data.size(), msg->width, msg->height);
 
     if (!pipeline_started_) {
         GstCaps* caps = gst_caps_new_simple(
-            "video/x-raw", "format", G_TYPE_STRING, format, "width", G_TYPE_INT,
+            "video/x-raw", "format", G_TYPE_STRING, format.c_str(), "width", G_TYPE_INT,
             msg->width, "height", G_TYPE_INT, msg->height, "framerate",
             GST_TYPE_FRACTION, framerate_, 1, NULL);
 
@@ -107,6 +102,7 @@ void ImageToGStreamer::imageCb(const sensor_msgs::msg::Image::SharedPtr msg) {
 
         gst_element_set_state(pipeline_, GST_STATE_PLAYING);
         pipeline_started_ = true;
+        timer_->cancel();
 
         RCLCPP_INFO(get_logger(), "H.265 GPU pipeline started");
     }
