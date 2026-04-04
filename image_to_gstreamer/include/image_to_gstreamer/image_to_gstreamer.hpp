@@ -11,7 +11,7 @@
 
 class ImageToGStreamer : public rclcpp::Node {
    public:
-    ImageToGStreamer();
+    explicit ImageToGStreamer(const rclcpp::NodeOptions & options);
     ~ImageToGStreamer();
 
    private:

@@ -1,4 +1,5 @@
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp_components/register_node_macro.hpp>
 #include <sensor_msgs/msg/image.hpp>
 
 #include <gst/app/gstappsrc.h>
@@ -6,8 +7,8 @@
 #include "image_to_gstreamer/image_to_gstreamer.hpp"
 #include <vortex/utils/ros/qos_profiles.hpp>
 
-ImageToGStreamer::ImageToGStreamer()
-    : Node("image_to_gstreamer_node"),
+ImageToGStreamer::ImageToGStreamer(const rclcpp::NodeOptions & options)
+    : Node("image_to_gstreamer_node", options),
       pipeline_(nullptr),
       appsrc_(nullptr),
       pipeline_started_(false) {
@@ -126,9 +127,4 @@ void ImageToGStreamer::imageCb(const sensor_msgs::msg::Image::SharedPtr msg) {
                      frame_count);
 }
 
-int main(int argc, char** argv) {
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<ImageToGStreamer>());
-    rclcpp::shutdown();
-    return 0;
-}
+RCLCPP_COMPONENTS_REGISTER_NODE(ImageToGStreamer)
