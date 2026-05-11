@@ -3,6 +3,7 @@ project(gstreamer_to_ROS)
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
 find_package(PkgConfig REQUIRED)
@@ -11,34 +12,41 @@ pkg_check_modules(GST REQUIRED
   gstreamer-app-1.0
 )
 
-add_executable(gstreamer_to_ROS_node
+add_library(gstreamer_to_ros_component SHARED
   src/gstreamer_to_ROS_node.cpp
 )
 
-target_include_directories(gstreamer_to_ROS_node PUBLIC
+target_include_directories(gstreamer_to_ros_component PUBLIC
   include
   ${GST_INCLUDE_DIRS}
 )
 
-target_link_libraries(gstreamer_to_ROS_node
+target_link_libraries(gstreamer_to_ros_component
   ${GST_LIBRARIES}
 )
 
-ament_target_dependencies(gstreamer_to_ROS_node
+ament_target_dependencies(gstreamer_to_ros_component
   rclcpp
+  rclcpp_components
   sensor_msgs
 )
 
-install(TARGETS
-  gstreamer_to_ROS_node
-  DESTINATION lib/${PROJECT_NAME}
+rclcpp_components_register_node(gstreamer_to_ros_component
+  PLUGIN "gstreamer_to_ros::GStreamerToROS"
+  EXECUTABLE gstreamer_to_ROS_node
+)
+
+install(TARGETS gstreamer_to_ros_component
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
 install(DIRECTORY include/
   DESTINATION include/
 )
 
-install(DIRECTORY config
+install(DIRECTORY config launch
   DESTINATION share/${PROJECT_NAME}
 )
 

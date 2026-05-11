@@ -1,25 +1,52 @@
-import os
-
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch_ros.actions import Node
+from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import ComposableNodeContainer
+from launch_ros.descriptions import ComposableNode
+
+
+def _launch_setup(context, *args, **kwargs):
+    use_nvidia = LaunchConfiguration('use_nvidia').perform(context).lower() == 'true'
+
+    container = ComposableNodeContainer(
+        name='image_to_gstreamer_container',
+        namespace='',
+        package='rclcpp_components',
+        executable='component_container_mt',
+        composable_node_descriptions=[
+            ComposableNode(
+                package='image_to_gstreamer',
+                plugin='image_to_gstreamer::ImageToGStreamer',
+                name='image_to_gstreamer_node',
+                parameters=[{
+                    'input_topic': '/zed_node/left/image_rect_color',
+                    'host': '10.0.0.154',
+                    'port': 5001,
+                    'framerate': 15,
+                    'bitrate': 500000,
+                    'preset_level': 1,
+                    'iframe_interval': 15,
+                    'control_rate': 1,
+                    'pt': 96,
+                    'config_interval': 1,
+                    'format': 'RGB',
+                    'hw_encoder': use_nvidia,
+                }],
+            ),
+        ],
+        output='screen',
+    )
+
+    return [container]
 
 
 def generate_launch_description():
-    config = os.path.join(
-        get_package_share_directory('image_to_gstreamer'),
-        'config',
-        'stream.yaml',
-    )
-
-    return LaunchDescription(
-        [
-            Node(
-                package='image_to_gstreamer',
-                executable='image_to_gstreamer_node',
-                name='image_to_gstreamer_node',
-                parameters=[config],
-                output='screen',
-            ),
-        ]
-    )
+    return LaunchDescription([
+        DeclareLaunchArgument(
+            'use_nvidia',
+            default_value='true',
+            description='Use NVIDIA hardware H.265 encoder (nvv4l2h265enc). '
+                        'Set false to use software x265enc.',
+        ),
+        OpaqueFunction(function=_launch_setup),
+    ])

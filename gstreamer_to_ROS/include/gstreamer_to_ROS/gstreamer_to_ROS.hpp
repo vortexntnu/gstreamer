@@ -8,9 +8,11 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 
+namespace gstreamer_to_ros {
+
 class GStreamerToROS : public rclcpp::Node {
    public:
-    GStreamerToROS();
+    explicit GStreamerToROS(const rclcpp::NodeOptions& options);
     ~GStreamerToROS();
 
    private:
@@ -26,6 +28,9 @@ class GStreamerToROS : public rclcpp::Node {
     std::string host_;
     int port_;
     std::string output_topic_;
+    bool hw_decoder_;
 };
+
+}  // namespace gstreamer_to_ros
 
 #endif  // GSTREAMER_TO_ROS__GSTREAMER_TO_ROS_HPP_

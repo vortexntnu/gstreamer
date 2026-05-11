@@ -9,9 +9,11 @@
 #include <gst/app/gstappsrc.h>
 #include <gst/gst.h>
 
+namespace image_to_gstreamer {
+
 class ImageToGStreamer : public rclcpp::Node {
    public:
-    ImageToGStreamer();
+    explicit ImageToGStreamer(const rclcpp::NodeOptions& options);
     ~ImageToGStreamer();
 
    private:
@@ -27,7 +29,7 @@ class ImageToGStreamer : public rclcpp::Node {
     int pt_;
     int config_interval_;
     int framerate_;
-    std::string format;
+    std::string format_;
     bool hw_encoder_;
 
     GstElement* pipeline_;
@@ -39,5 +41,7 @@ class ImageToGStreamer : public rclcpp::Node {
     std::string host_;
     int port_;
 };
+
+}  // namespace image_to_gstreamer
 
 #endif  // IMAGE_TO_GSTREAMER__IMAGE_TO_GSTREAMER_HPP_
