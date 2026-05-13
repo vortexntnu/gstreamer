@@ -1,5 +1,5 @@
-#ifndef IMAGE_TO_GSTREAMER__IMAGE_TO_GSTREAMER_HPP_
-#define IMAGE_TO_GSTREAMER__IMAGE_TO_GSTREAMER_HPP_
+#ifndef GSTREAMER_FROM_ROS__GSTREAMER_FROM_ROS_HPP_
+#define GSTREAMER_FROM_ROS__GSTREAMER_FROM_ROS_HPP_
 
 #include <string>
 
@@ -9,12 +9,12 @@
 #include <gst/app/gstappsrc.h>
 #include <gst/gst.h>
 
-namespace image_to_gstreamer {
+namespace gstreamer_from_ros {
 
-class ImageToGStreamer : public rclcpp::Node {
+class GStreamerFromRos : public rclcpp::Node {
    public:
-    explicit ImageToGStreamer(const rclcpp::NodeOptions& options);
-    ~ImageToGStreamer();
+    explicit GStreamerFromRos(const rclcpp::NodeOptions& options);
+    ~GStreamerFromRos();
 
    private:
     void create_pipeline();
@@ -42,6 +42,6 @@ class ImageToGStreamer : public rclcpp::Node {
     int port_;
 };
 
-}  // namespace image_to_gstreamer
+}  // namespace gstreamer_from_ros
 
-#endif  // IMAGE_TO_GSTREAMER__IMAGE_TO_GSTREAMER_HPP_
+#endif  // GSTREAMER_FROM_ROS__GSTREAMER_FROM_ROS_HPP_

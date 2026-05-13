@@ -6,7 +6,7 @@ from launch_ros.descriptions import ComposableNode
 
 
 def _launch_setup(context, *args, **kwargs):
-    use_nvidia = LaunchConfiguration('use_nvidia').perform(context).lower() == 'true'
+    use_nvidia = LaunchConfiguration('gst_nvidia_encoder').perform(context).lower() == 'true'
 
     container = ComposableNodeContainer(
         name='gstreamer_to_ros_container',
@@ -15,9 +15,9 @@ def _launch_setup(context, *args, **kwargs):
         executable='component_container_mt',
         composable_node_descriptions=[
             ComposableNode(
-                package='gstreamer_to_ROS',
+                package='gstreamer_to_ros',
                 plugin='gstreamer_to_ros::GStreamerToROS',
-                name='gstreamer_to_ROS_node',
+                name='gstreamer_to_ros_node',
                 parameters=[{
                     'host': '0.0.0.0',
                     'port': 5001,
@@ -35,7 +35,7 @@ def _launch_setup(context, *args, **kwargs):
 def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
-            'use_nvidia',
+            'gst_nvidia_encoder',
             default_value='true',
             description='Use NVIDIA hardware H.265 decoder (nvh265dec). '
                         'Set false to use software avdec_h265.',

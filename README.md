@@ -4,8 +4,9 @@
 Repository to move image to gstreamer
 ```
 
-# Setup
+# Dependencies
 ```
+sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
 ```
 
 ## launch variables

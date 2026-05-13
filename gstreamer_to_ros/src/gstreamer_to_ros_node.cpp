@@ -1,11 +1,11 @@
-#include "gstreamer_to_ROS/gstreamer_to_ROS.hpp"
+#include "gstreamer_to_ros/gstreamer_to_ros.hpp"
 
 #include <rclcpp_components/register_node_macro.hpp>
 
 namespace gstreamer_to_ros {
 
 GStreamerToROS::GStreamerToROS(const rclcpp::NodeOptions& options)
-    : Node("gstreamer_to_ROS_node", options), pipeline_(nullptr), appsink_(nullptr) {
+    : Node("gstreamer_to_ros_node", options), pipeline_(nullptr), appsink_(nullptr) {
     gst_init(nullptr, nullptr);
 
     host_ = declare_parameter<std::string>("host", "0.0.0.0");

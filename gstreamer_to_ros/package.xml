@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>gstreamer_to_ROS</name>
+  <name>gstreamer_to_ros</name>
   <version>0.1.0</version>
   <description>ROS 2 node that fits a line over a white segmented mask using IRLS (Huber/Tukey) and OpenCV.</description>
 

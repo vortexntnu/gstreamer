@@ -1,12 +1,11 @@
-#include "image_to_gstreamer/image_to_gstreamer.hpp"
+#include "gstreamer_from_ros/gstreamer_from_ros.hpp"
 
 #include <rclcpp_components/register_node_macro.hpp>
-#include <vortex/utils/ros/qos_profiles.hpp>
 
-namespace image_to_gstreamer {
+namespace gstreamer_from_ros {
 
-ImageToGStreamer::ImageToGStreamer(const rclcpp::NodeOptions& options)
-    : Node("image_to_gstreamer_node", options),
+GStreamerFromRos::GStreamerFromRos(const rclcpp::NodeOptions& options)
+    : Node("gstreamer_from_ros_node", options),
       pipeline_(nullptr),
       appsrc_(nullptr),
       pipeline_started_(false) {
@@ -25,9 +24,11 @@ ImageToGStreamer::ImageToGStreamer(const rclcpp::NodeOptions& options)
     format_ = declare_parameter<std::string>("format", "RGB");
     hw_encoder_ = declare_parameter<bool>("hw_encoder", true);
 
+    auto qos = rclcpp::QoS(rclcpp::KeepLast(3)).best_effort().durability_volatile();
+
     sub_ = create_subscription<sensor_msgs::msg::Image>(
-        input_topic_, vortex::utils::qos_profiles::sensor_data_profile(1),
-        std::bind(&ImageToGStreamer::imageCb, this, std::placeholders::_1));
+        input_topic_, qos,
+        std::bind(&GStreamerFromRos::imageCb, this, std::placeholders::_1));
 
     timer_ = create_wall_timer(std::chrono::seconds(5), [this]() {
         RCLCPP_INFO(get_logger(), "Waiting for images on topic: '%s'",
@@ -37,14 +38,14 @@ ImageToGStreamer::ImageToGStreamer(const rclcpp::NodeOptions& options)
     create_pipeline();
 }
 
-ImageToGStreamer::~ImageToGStreamer() {
+GStreamerFromRos::~GStreamerFromRos() {
     if (pipeline_) {
         gst_element_set_state(pipeline_, GST_STATE_NULL);
         gst_object_unref(pipeline_);
     }
 }
 
-void ImageToGStreamer::create_pipeline() {
+void GStreamerFromRos::create_pipeline() {
     pipeline_ = gst_pipeline_new("ros2-h265-pipeline");
     appsrc_ = gst_element_factory_make("appsrc", "source");
     GstElement* convert = gst_element_factory_make("videoconvert", "convert");
@@ -103,7 +104,7 @@ void ImageToGStreamer::create_pipeline() {
                 hw_encoder_ ? "NVIDIA hw" : "x265 sw");
 }
 
-void ImageToGStreamer::imageCb(const sensor_msgs::msg::Image::SharedPtr msg) {
+void GStreamerFromRos::imageCb(const sensor_msgs::msg::Image::SharedPtr msg) {
     static size_t frame_count = 0;
     frame_count++;
 
@@ -139,6 +140,6 @@ void ImageToGStreamer::imageCb(const sensor_msgs::msg::Image::SharedPtr msg) {
         RCLCPP_DEBUG(get_logger(), "Pushed frame #%zu into GStreamer", frame_count);
 }
 
-}  // namespace image_to_gstreamer
+}  // namespace gstreamer_from_ros
 
-RCLCPP_COMPONENTS_REGISTER_NODE(image_to_gstreamer::ImageToGStreamer)
+RCLCPP_COMPONENTS_REGISTER_NODE(gstreamer_from_ros::GStreamerFromRos)

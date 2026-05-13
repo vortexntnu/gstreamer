@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(gstreamer_to_ROS)
+project(gstreamer_to_ros)
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -13,7 +13,7 @@ pkg_check_modules(GST REQUIRED
 )
 
 add_library(gstreamer_to_ros_component SHARED
-  src/gstreamer_to_ROS_node.cpp
+  src/gstreamer_to_ros_node.cpp
 )
 
 target_include_directories(gstreamer_to_ros_component PUBLIC
@@ -33,7 +33,7 @@ ament_target_dependencies(gstreamer_to_ros_component
 
 rclcpp_components_register_node(gstreamer_to_ros_component
   PLUGIN "gstreamer_to_ros::GStreamerToROS"
-  EXECUTABLE gstreamer_to_ROS_node
+  EXECUTABLE gstreamer_to_ros_node
 )
 
 install(TARGETS gstreamer_to_ros_component

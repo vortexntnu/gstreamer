@@ -1,11 +1,10 @@
 cmake_minimum_required(VERSION 3.8)
-project(image_to_gstreamer)
+project(gstreamer_from_ros)
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(vortex_utils_ros REQUIRED)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GST REQUIRED
@@ -13,32 +12,31 @@ pkg_check_modules(GST REQUIRED
   gstreamer-app-1.0
 )
 
-add_library(image_to_gstreamer_component SHARED
-  src/image_to_gstreamer_node.cpp
+add_library(gstreamer_from_ros_component SHARED
+  src/gstreamer_from_ros_node.cpp
 )
 
-target_include_directories(image_to_gstreamer_component PUBLIC
+target_include_directories(gstreamer_from_ros_component PUBLIC
   include
   ${GST_INCLUDE_DIRS}
 )
 
-target_link_libraries(image_to_gstreamer_component
+target_link_libraries(gstreamer_from_ros_component
   ${GST_LIBRARIES}
 )
 
-ament_target_dependencies(image_to_gstreamer_component
+ament_target_dependencies(gstreamer_from_ros_component
   rclcpp
   rclcpp_components
   sensor_msgs
-  vortex_utils_ros
 )
 
-rclcpp_components_register_node(image_to_gstreamer_component
-  PLUGIN "image_to_gstreamer::ImageToGStreamer"
-  EXECUTABLE image_to_gstreamer_node
+rclcpp_components_register_node(gstreamer_from_ros_component
+  PLUGIN "gstreamer_from_ros::GStreamerFromRos"
+  EXECUTABLE gstreamer_from_ros_node
 )
 
-install(TARGETS image_to_gstreamer_component
+install(TARGETS gstreamer_from_ros_component
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib/${PROJECT_NAME}

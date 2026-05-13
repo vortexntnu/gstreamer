@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>image_to_gstreamer</name>
+  <name>gstreamer_from_ros</name>
   <version>0.1.0</version>
   <description>takes image form ROS node and sends it via gstreamer</description>
 
@@ -11,9 +11,7 @@
 
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
-  <depend>sensor_msgs</depend>
-  <depend>vortex_utils_ros</depend>
-  
+  <depend>sensor_msgs</depend>  
   
 
   <build_depend>pkg-config</build_depend>
