@@ -28,8 +28,8 @@ class GStreamerFromRos : public rclcpp::Node {
     int control_rate_;
     int pt_;
     int config_interval_;
-    int framerate_;
-    std::string format_;
+    int expected_input_fps_;
+    std::string input_format_;
     bool hw_encoder_;
 
     GstElement* pipeline_;
@@ -38,8 +38,8 @@ class GStreamerFromRos : public rclcpp::Node {
     bool pipeline_started_;
 
     std::string input_topic_;
-    std::string host_;
-    int port_;
+    std::string destination_ip_;
+    int destination_port_;
 };
 
 }  // namespace gstreamer_from_ros

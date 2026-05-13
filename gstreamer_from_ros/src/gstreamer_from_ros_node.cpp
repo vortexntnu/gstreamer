@@ -12,16 +12,16 @@ GStreamerFromRos::GStreamerFromRos(const rclcpp::NodeOptions& options)
     gst_init(nullptr, nullptr);
 
     input_topic_ = declare_parameter<std::string>("input_topic", "");
-    host_ = declare_parameter<std::string>("host", "");
-    port_ = declare_parameter<int>("port", 5000);
+    destination_ip_ = declare_parameter<std::string>("destination_ip", "");
+    destination_port_ = declare_parameter<int>("destination_port", 5000);
     bitrate_ = declare_parameter<int>("bitrate", 500000);
     preset_level_ = declare_parameter<int>("preset_level", 1);
     iframe_interval_ = declare_parameter<int>("iframe_interval", 15);
     control_rate_ = declare_parameter<int>("control_rate", 1);
     pt_ = declare_parameter<int>("pt", 96);
     config_interval_ = declare_parameter<int>("config_interval", 1);
-    framerate_ = declare_parameter<int>("framerate", 15);
-    format_ = declare_parameter<std::string>("format", "RGB");
+    expected_input_fps_ = declare_parameter<int>("expected_input_fps", 15);
+    input_format_ = declare_parameter<std::string>("input_format", "RGB");
     hw_encoder_ = declare_parameter<bool>("hw_encoder", true);
 
     auto qos = rclcpp::QoS(rclcpp::KeepLast(3)).best_effort().durability_volatile();
@@ -83,7 +83,7 @@ void GStreamerFromRos::create_pipeline() {
     }
 
     g_object_set(pay, "config-interval", config_interval_, "pt", pt_, NULL);
-    g_object_set(sink, "host", host_.c_str(), "port", port_, "sync", FALSE, NULL);
+    g_object_set(sink, "host", destination_ip_.c_str(), "port", destination_port_, "sync", FALSE, NULL);
 
     if (hw_encoder_) {
         gst_bin_add_many(GST_BIN(pipeline_), appsrc_, convert, nvconv, encoder,
@@ -110,10 +110,10 @@ void GStreamerFromRos::imageCb(const sensor_msgs::msg::Image::SharedPtr msg) {
 
     if (!pipeline_started_) {
         GstCaps* caps = gst_caps_new_simple(
-            "video/x-raw", "format", G_TYPE_STRING, format_.c_str(),
+            "video/x-raw", "format", G_TYPE_STRING, input_format_.c_str(),
             "width", G_TYPE_INT, msg->width,
             "height", G_TYPE_INT, msg->height,
-            "framerate", GST_TYPE_FRACTION, framerate_, 1, NULL);
+            "framerate", GST_TYPE_FRACTION, expected_input_fps_, 1, NULL);
 
         g_object_set(appsrc_, "caps", caps, "format", GST_FORMAT_TIME,
                      "is-live", TRUE, "do-timestamp", TRUE, NULL);
