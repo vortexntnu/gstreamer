@@ -1,0 +1,14 @@
+/**:
+  ros__parameters:
+    input_topic: "/blackfly_s/image_raw"
+    destination_ip: "127.0.0.1"
+    destination_port: 5001
+
+    expected_input_fps: 15
+    bitrate: 500000
+    preset_level: 1
+    iframe_interval: 15
+    control_rate: 1
+    pt: 96
+    config_interval: 1
+    input_format: "RGB"
