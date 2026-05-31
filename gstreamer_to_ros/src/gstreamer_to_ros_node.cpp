@@ -11,6 +11,7 @@ GStreamerToROS::GStreamerToROS(const rclcpp::NodeOptions& options)
     host_ = declare_parameter<std::string>("host", "0.0.0.0");
     port_ = declare_parameter<int>("port", 5001);
     output_topic_ = declare_parameter<std::string>("output_topic", "/camera/image_raw");
+    output_format_ = declare_parameter<std::string>("output_format", "BGR");
     hw_decoder_ = declare_parameter<bool>("hw_decoder", true);
 
     pub_ = create_publisher<sensor_msgs::msg::Image>(
@@ -52,7 +53,12 @@ void GStreamerToROS::create_pipeline() {
     g_object_set(src, "port", port_, "caps", caps, NULL);
     gst_caps_unref(caps);
 
-    g_object_set(appsink_, "emit-signals", TRUE, "sync", FALSE, NULL);
+    // Force videoconvert to produce the requested output format so the ROS
+    // message encoding and step are always consistent with the buffer contents.
+    GstCaps* out_caps = gst_caps_new_simple(
+        "video/x-raw", "format", G_TYPE_STRING, output_format_.c_str(), NULL);
+    g_object_set(appsink_, "emit-signals", TRUE, "sync", FALSE, "caps", out_caps, NULL);
+    gst_caps_unref(out_caps);
     g_signal_connect(appsink_, "new-sample", G_CALLBACK(GStreamerToROS::on_new_sample), this);
 
     gst_bin_add_many(GST_BIN(pipeline_), src, depay, parse, decoder, convert, appsink_, NULL);
@@ -89,13 +95,20 @@ GstFlowReturn GStreamerToROS::on_new_sample(GstAppSink* sink, gpointer user_data
         return GST_FLOW_ERROR;
     }
 
+    const std::string fmt = gst_structure_get_string(structure, "format");
+
     sensor_msgs::msg::Image msg;
     msg.header.stamp = node->now();
     msg.header.frame_id = "camera";
     msg.width = width;
     msg.height = height;
-    msg.encoding = "bgr8";
-    msg.step = width * 3;
+    if (fmt == "GRAY8") {
+        msg.encoding = "mono8";
+        msg.step = width;
+    } else {
+        msg.encoding = "bgr8";
+        msg.step = width * 3;
+    }
     msg.data.assign(map.data, map.data + map.size);
 
     node->pub_->publish(msg);

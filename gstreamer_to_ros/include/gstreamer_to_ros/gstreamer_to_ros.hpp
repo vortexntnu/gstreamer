@@ -28,6 +28,7 @@ class GStreamerToROS : public rclcpp::Node {
     std::string host_;
     int port_;
     std::string output_topic_;
+    std::string output_format_;
     bool hw_decoder_;
 };
 
