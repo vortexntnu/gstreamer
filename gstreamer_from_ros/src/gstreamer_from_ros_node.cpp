@@ -8,7 +8,9 @@ GStreamerFromRos::GStreamerFromRos(const rclcpp::NodeOptions& options)
     : Node("gstreamer_from_ros_node", options),
       pipeline_(nullptr),
       appsrc_(nullptr),
-      pipeline_started_(false) {
+      bus_(nullptr),
+      pipeline_started_(false),
+      pipeline_error_(false) {
     gst_init(nullptr, nullptr);
 
     input_topic_ = declare_parameter<std::string>("input_topic", "");
@@ -35,6 +37,9 @@ GStreamerFromRos::GStreamerFromRos(const rclcpp::NodeOptions& options)
                     input_topic_.c_str());
     });
 
+    bus_timer_ = create_wall_timer(std::chrono::milliseconds(200),
+                                   std::bind(&GStreamerFromRos::drain_bus, this));
+
     create_pipeline();
 }
 
@@ -42,6 +47,48 @@ GStreamerFromRos::~GStreamerFromRos() {
     if (pipeline_) {
         gst_element_set_state(pipeline_, GST_STATE_NULL);
         gst_object_unref(pipeline_);
+    }
+    if (bus_) {
+        gst_object_unref(bus_);
+    }
+}
+
+void GStreamerFromRos::drain_bus() {
+    if (!bus_) return;
+
+    GstMessage* msg;
+    while ((msg = gst_bus_pop(bus_)) != nullptr) {
+        switch (GST_MESSAGE_TYPE(msg)) {
+            case GST_MESSAGE_ERROR: {
+                GError* err = nullptr;
+                gchar* debug = nullptr;
+                gst_message_parse_error(msg, &err, &debug);
+                RCLCPP_ERROR(get_logger(), "GStreamer error: %s (%s)",
+                             err->message, debug ? debug : "no debug info");
+                g_clear_error(&err);
+                g_free(debug);
+                pipeline_error_ = true;
+                break;
+            }
+            case GST_MESSAGE_WARNING: {
+                GError* err = nullptr;
+                gchar* debug = nullptr;
+                gst_message_parse_warning(msg, &err, &debug);
+                // "code not implemented" is a known benign GStreamer quirk when
+                // x265enc uses main-444 profile (e.g. GRAY8 input via videoconvert).
+                if (g_strstr_len(err->message, -1, "code not implemented")) {
+                    RCLCPP_DEBUG(get_logger(), "GStreamer: %s", err->message);
+                } else {
+                    RCLCPP_WARN(get_logger(), "GStreamer warning: %s", err->message);
+                }
+                g_clear_error(&err);
+                g_free(debug);
+                break;
+            }
+            default:
+                break;
+        }
+        gst_message_unref(msg);
     }
 }
 
@@ -71,14 +118,24 @@ void GStreamerFromRos::create_pipeline() {
         return;
     }
 
+    // Cap the appsrc queue so a slow encoder cannot cause unbounded memory growth.
+    // max-bytes=0 disables the byte limit; max-buffers=4 drops frames beyond 4
+    // queued when the encoder falls behind (block=FALSE = drop, not block).
+    g_object_set(appsrc_,
+        "max-bytes", guint64(0),
+        "max-buffers", guint64(4),
+        "block", FALSE,
+        NULL);
+
     if (hw_encoder_) {
         g_object_set(encoder, "bitrate", bitrate_, "preset-level", preset_level_,
                      "iframeinterval", iframe_interval_, "control-rate", control_rate_, NULL);
     } else {
-        // x265enc bitrate is in kbits/sec; key-int-max is the I-frame interval
+        // x265enc bitrate is in kbits/sec; key-int-max is the I-frame interval.
         g_object_set(encoder, "bitrate", bitrate_ / 1000,
                      "key-int-max", iframe_interval_,
-                     "speed-preset", 0,  // ultrafast — minimise latency
+                     "speed-preset", 1,  // ultrafast
+                     "tune", 4,          // zerolatency: disables B-frames/lookahead for live use
                      NULL);
     }
 
@@ -100,6 +157,8 @@ void GStreamerFromRos::create_pipeline() {
         }
     }
 
+    bus_ = gst_pipeline_get_bus(GST_PIPELINE(pipeline_));
+
     RCLCPP_INFO(get_logger(), "GStreamer H.265 pipeline created (%s encoder)",
                 hw_encoder_ ? "NVIDIA hw" : "x265 sw");
 }
@@ -107,6 +166,8 @@ void GStreamerFromRos::create_pipeline() {
 void GStreamerFromRos::imageCb(const sensor_msgs::msg::Image::SharedPtr msg) {
     static size_t frame_count = 0;
     frame_count++;
+
+    if (pipeline_error_) return;
 
     if (!pipeline_started_) {
         GstCaps* caps = gst_caps_new_simple(
@@ -130,12 +191,12 @@ void GStreamerFromRos::imageCb(const sensor_msgs::msg::Image::SharedPtr msg) {
     GstBuffer* buffer = gst_buffer_new_allocate(nullptr, msg->data.size(), nullptr);
     gst_buffer_fill(buffer, 0, msg->data.data(), msg->data.size());
 
-    GstFlowReturn ret;
-    g_signal_emit_by_name(appsrc_, "push-buffer", buffer, &ret);
-    gst_buffer_unref(buffer);
+    // gst_app_src_push_buffer takes ownership of buffer; do NOT unref after.
+    GstFlowReturn ret = gst_app_src_push_buffer(GST_APP_SRC(appsrc_), buffer);
 
     if (ret != GST_FLOW_OK)
-        RCLCPP_WARN(get_logger(), "Failed to push buffer");
+        RCLCPP_WARN(get_logger(), "Frame #%zu dropped (encoder queue full or pipeline not ready)",
+                    frame_count);
     else
         RCLCPP_DEBUG(get_logger(), "Pushed frame #%zu into GStreamer", frame_count);
 }

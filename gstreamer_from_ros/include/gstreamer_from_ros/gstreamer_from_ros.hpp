@@ -19,9 +19,11 @@ class GStreamerFromRos : public rclcpp::Node {
    private:
     void create_pipeline();
     void imageCb(const sensor_msgs::msg::Image::SharedPtr msg);
+    void drain_bus();
 
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;
     rclcpp::TimerBase::SharedPtr timer_;
+    rclcpp::TimerBase::SharedPtr bus_timer_;
     int bitrate_;
     int preset_level_;
     int iframe_interval_;
@@ -34,8 +36,10 @@ class GStreamerFromRos : public rclcpp::Node {
 
     GstElement* pipeline_;
     GstElement* appsrc_;
+    GstBus*     bus_;
 
     bool pipeline_started_;
+    bool pipeline_error_;
 
     std::string input_topic_;
     std::string destination_ip_;
