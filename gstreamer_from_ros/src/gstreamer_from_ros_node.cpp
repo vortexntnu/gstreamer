@@ -8,6 +8,7 @@ GStreamerFromRos::GStreamerFromRos(const rclcpp::NodeOptions& options)
     : Node("gstreamer_from_ros_node", options),
       pipeline_(nullptr),
       appsrc_(nullptr),
+      enc_capsfilter_(nullptr),
       bus_(nullptr),
       pipeline_started_(false),
       pipeline_error_(false) {
@@ -110,8 +111,16 @@ void GStreamerFromRos::create_pipeline() {
         encoder = gst_element_factory_make("x265enc", "encoder");
     }
 
+    // capsfilter forces I420 so x265enc always uses main profile rather than
+    // main-444. Odd-width padding is handled in imageCb (C++ side) so we avoid
+    // relying on videoscale, which silently zeroes luma for this dimension case.
+    if (!hw_encoder_) {
+        enc_capsfilter_ = gst_element_factory_make("capsfilter", "enc_caps");
+    }
+
     bool elements_ok = appsrc_ && convert && encoder && parser && pay && sink && pipeline_;
     if (hw_encoder_) elements_ok = elements_ok && nvconv;
+    if (!hw_encoder_) elements_ok = elements_ok && enc_capsfilter_;
 
     if (!elements_ok) {
         RCLCPP_FATAL(get_logger(), "Failed to create GStreamer elements");
@@ -135,7 +144,6 @@ void GStreamerFromRos::create_pipeline() {
         g_object_set(encoder, "bitrate", bitrate_ / 1000,
                      "key-int-max", iframe_interval_,
                      "speed-preset", 1,  // ultrafast
-                     "tune", 4,          // zerolatency: disables B-frames/lookahead for live use
                      NULL);
     }
 
@@ -150,8 +158,10 @@ void GStreamerFromRos::create_pipeline() {
             return;
         }
     } else {
-        gst_bin_add_many(GST_BIN(pipeline_), appsrc_, convert, encoder, parser, pay, sink, NULL);
-        if (!gst_element_link_many(appsrc_, convert, encoder, parser, pay, sink, NULL)) {
+        gst_bin_add_many(GST_BIN(pipeline_), appsrc_, convert, enc_capsfilter_,
+                         encoder, parser, pay, sink, NULL);
+        if (!gst_element_link_many(appsrc_, convert, enc_capsfilter_,
+                                   encoder, parser, pay, sink, NULL)) {
             RCLCPP_FATAL(get_logger(), "Pipeline linking failed");
             return;
         }
@@ -169,27 +179,63 @@ void GStreamerFromRos::imageCb(const sensor_msgs::msg::Image::SharedPtr msg) {
 
     if (pipeline_error_) return;
 
+    // x265 requires even width/height. Pad odd dimensions by duplicating the
+    // last column/row in C++ rather than using videoscale, which zeroes luma.
+    const int aw = (static_cast<int>(msg->width)  + 1) & ~1;
+    const int ah = (static_cast<int>(msg->height) + 1) & ~1;
+    const size_t bpp = msg->step / msg->width;  // bytes per pixel
+
     if (!pipeline_started_) {
         GstCaps* caps = gst_caps_new_simple(
             "video/x-raw", "format", G_TYPE_STRING, input_format_.c_str(),
-            "width", G_TYPE_INT, msg->width,
-            "height", G_TYPE_INT, msg->height,
+            "width", G_TYPE_INT, aw,
+            "height", G_TYPE_INT, ah,
             "framerate", GST_TYPE_FRACTION, expected_input_fps_, 1, NULL);
 
         g_object_set(appsrc_, "caps", caps, "format", GST_FORMAT_TIME,
                      "is-live", TRUE, "do-timestamp", TRUE, NULL);
         gst_caps_unref(caps);
 
+        if (enc_capsfilter_) {
+            GstCaps* enc_caps = gst_caps_new_simple(
+                "video/x-raw", "format", G_TYPE_STRING, "I420",
+                "width", G_TYPE_INT, aw, "height", G_TYPE_INT, ah, NULL);
+            g_object_set(enc_capsfilter_, "caps", enc_caps, NULL);
+            gst_caps_unref(enc_caps);
+        }
+
         gst_element_set_state(pipeline_, GST_STATE_PLAYING);
         pipeline_started_ = true;
         timer_->cancel();
 
-        RCLCPP_INFO(get_logger(), "H.265 pipeline started (%s)",
-                    hw_encoder_ ? "NVIDIA hw encoder" : "x265 sw encoder");
+        RCLCPP_INFO(get_logger(), "H.265 pipeline started (%s) %dx%d -> %dx%d %s",
+                    hw_encoder_ ? "NVIDIA hw encoder" : "x265 sw encoder",
+                    msg->width, msg->height, aw, ah, input_format_.c_str());
     }
 
-    GstBuffer* buffer = gst_buffer_new_allocate(nullptr, msg->data.size(), nullptr);
-    gst_buffer_fill(buffer, 0, msg->data.data(), msg->data.size());
+    GstBuffer* buffer;
+    if (aw == static_cast<int>(msg->width) && ah == static_cast<int>(msg->height)) {
+        buffer = gst_buffer_new_allocate(nullptr, msg->data.size(), nullptr);
+        gst_buffer_fill(buffer, 0, msg->data.data(), msg->data.size());
+    } else {
+        // Pad to even dimensions: copy each row then duplicate last pixel/row.
+        const size_t row_bytes = aw * bpp;
+        std::vector<uint8_t> padded(row_bytes * ah);
+        for (uint32_t r = 0; r < msg->height; r++) {
+            const uint8_t* src = msg->data.data() + r * msg->step;
+            uint8_t* dst = padded.data() + r * row_bytes;
+            std::copy(src, src + msg->width * bpp, dst);
+            if (aw > static_cast<int>(msg->width))
+                std::copy(src + (msg->width - 1) * bpp, src + msg->width * bpp,
+                          dst + msg->width * bpp);
+        }
+        if (ah > static_cast<int>(msg->height)) {
+            const uint8_t* last = padded.data() + (msg->height - 1) * row_bytes;
+            std::copy(last, last + row_bytes, padded.data() + msg->height * row_bytes);
+        }
+        buffer = gst_buffer_new_allocate(nullptr, padded.size(), nullptr);
+        gst_buffer_fill(buffer, 0, padded.data(), padded.size());
+    }
 
     // gst_app_src_push_buffer takes ownership of buffer; do NOT unref after.
     GstFlowReturn ret = gst_app_src_push_buffer(GST_APP_SRC(appsrc_), buffer);

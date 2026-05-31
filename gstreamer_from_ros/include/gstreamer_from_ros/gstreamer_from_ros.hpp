@@ -36,6 +36,7 @@ class GStreamerFromRos : public rclcpp::Node {
 
     GstElement* pipeline_;
     GstElement* appsrc_;
+    GstElement* enc_capsfilter_;
     GstBus*     bus_;
 
     bool pipeline_started_;
